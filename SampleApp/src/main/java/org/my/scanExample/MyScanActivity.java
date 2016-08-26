@@ -58,7 +58,7 @@ public class MyScanActivity extends Activity {
 
         // hides the manual entry button
         // if set, developers should provide their own manual entry mechanism in the app
-        scanIntent.putExtra(CardIOActivity.EXTRA_SUPPRESS_MANUAL_ENTRY, false); // default: false
+        scanIntent.putExtra(CardIOActivity.EXTRA_SUPPRESS_MANUAL_ENTRY, true); // default: false
 
         // matches the theme of your application
         scanIntent.putExtra(CardIOActivity.EXTRA_KEEP_APPLICATION_THEME, false); // default: false

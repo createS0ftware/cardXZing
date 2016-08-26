@@ -13,16 +13,22 @@ import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.WindowManager;
+import android.widget.Toast;
+
+import com.google.zxing.Result;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
 /**
  * Encapsulates the core image scanning.
@@ -38,7 +44,7 @@ import java.util.Map;
  * HOWEVER, at the moment, the CardScanner is directly communicating with the Preview.
  */
 class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
-        SurfaceHolder.Callback {
+        SurfaceHolder.Callback, ZXingScannerView.ResultHandler {
     private static final String TAG = CardScanner.class.getSimpleName();
 
     private static final float MIN_FOCUS_SCORE = 6; // TODO - parameterize this
@@ -437,6 +443,9 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
 
     private int frameCount = 0;
 
+    boolean gettingBarcode = false;
+    ZXingScannerView zXingScannerView;
+
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
 
@@ -445,45 +454,53 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
             return;
         }
 
-        if (processingInProgress) {
-            Log.e(TAG, "processing in progress.... dropping frame");
-            // return frame buffer to pool
-            numFramesSkipped++;
+        if (gettingBarcode) {
+            if (zXingScannerView == null) {
+                zXingScannerView = new ZXingScannerView(mScanActivityRef.get());
+            }
+            zXingScannerView.setResultHandler(this);
+            zXingScannerView.onPreviewFrame(data,camera);
+        } else {
+            if (processingInProgress) {
+                Log.e(TAG, "processing in progress.... dropping frame");
+                // return frame buffer to pool
+                numFramesSkipped++;
+                if (camera != null) {
+                    camera.addCallbackBuffer(data);
+                }
+                return;
+            }
+            processingInProgress = true;
+
+            // TODO: eliminate this foolishness and measure/layout properly.
+            if (mFirstPreviewFrame) {
+                Log.d(TAG, "mFirstPreviewFrame");
+                mFirstPreviewFrame = false;
+                mFrameOrientation = ORIENTATION_PORTRAIT;
+                mScanActivityRef.get().onFirstFrame(ORIENTATION_PORTRAIT);
+            }
+
+            DetectionInfo dInfo = new DetectionInfo();
+
+            /** pika **/
+            nScanFrame(data, mPreviewWidth, mPreviewHeight, mFrameOrientation, dInfo, detectedBitmap, mScanExpiry);
+
+            boolean sufficientFocus = (dInfo.focusScore >= MIN_FOCUS_SCORE);
+
+            if (!sufficientFocus) {
+                triggerAutoFocus(false);
+            } else if (dInfo.predicted() || (mSuppressScan && dInfo.detected())) {
+                Log.d(TAG, "detected card: " + dInfo.creditCard());
+                //mScanActivityRef.get().onCardDetected(detectedBitmap, dInfo);
+                gettingBarcode = true;
+            }
+            // give the image buffer back to the camera, AFTER we're done reading
+            // the image.
             if (camera != null) {
                 camera.addCallbackBuffer(data);
             }
-            return;
+            processingInProgress = false;
         }
-        processingInProgress = true;
-
-        // TODO: eliminate this foolishness and measure/layout properly.
-        if (mFirstPreviewFrame) {
-            Log.d(TAG, "mFirstPreviewFrame");
-            mFirstPreviewFrame = false;
-            mFrameOrientation = ORIENTATION_PORTRAIT;
-            mScanActivityRef.get().onFirstFrame(ORIENTATION_PORTRAIT);
-        }
-
-        DetectionInfo dInfo = new DetectionInfo();
-
-        /** pika **/
-        nScanFrame(data, mPreviewWidth, mPreviewHeight, mFrameOrientation, dInfo, detectedBitmap, mScanExpiry);
-
-        boolean sufficientFocus = (dInfo.focusScore >= MIN_FOCUS_SCORE);
-
-        if (!sufficientFocus) {
-            triggerAutoFocus(false);
-        } else if (dInfo.predicted() || (mSuppressScan && dInfo.detected())) {
-            Log.d(TAG, "detected card: " + dInfo.creditCard());
-            mScanActivityRef.get().onCardDetected(detectedBitmap, dInfo);
-        }
-        // give the image buffer back to the camera, AFTER we're done reading
-        // the image.
-        if (camera != null) {
-            camera.addCallbackBuffer(data);
-        }
-        processingInProgress = false;
-
     }
 
     void onEdgeUpdate(DetectionInfo dInfo) {
@@ -664,5 +681,12 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
             rotationOffset = 0;
         }
         return rotationOffset;
+    }
+
+    @Override
+    public void handleResult(Result rawResult) {
+        Toast.makeText(mScanActivityRef.get(), "Contents = " + rawResult.getText() +
+                ", Format = " + rawResult.getBarcodeFormat().toString(), Toast.LENGTH_SHORT).show();
+
     }
 }

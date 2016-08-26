@@ -1,3 +1,2 @@
-include 'card.io'
-
+include 'card.io', ':zxing'
 include 'SampleApp'
