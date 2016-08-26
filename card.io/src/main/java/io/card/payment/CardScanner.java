@@ -13,6 +13,7 @@ import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
 import android.os.Build;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -477,7 +478,7 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
                 mScanActivityRef.get().onFirstFrame(ORIENTATION_PORTRAIT);
             }
 
-            DetectionInfo dInfo = new DetectionInfo();
+            dInfo = new DetectionInfo();
 
             /** pika **/
             nScanFrame(data, mPreviewWidth, mPreviewHeight, mFrameOrientation, dInfo, detectedBitmap, mScanExpiry);
@@ -488,7 +489,17 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
                 triggerAutoFocus(false);
             } else if (dInfo.predicted() || (mSuppressScan && dInfo.detected())) {
                 Log.d(TAG, "detected card: " + dInfo.creditCard());
-                //mScanActivityRef.get().onCardDetected(detectedBitmap, dInfo);
+
+                try {
+                    Vibrator vibrator = (Vibrator) mScanActivityRef.get().getSystemService(Context.VIBRATOR_SERVICE);
+                    vibrator.vibrate(CardIOActivity.VIBRATE_PATTERN, -1);
+                } catch (SecurityException e) {
+                    Log.e(Util.PUBLIC_LOG_TAG,
+                            "Could not activate vibration feedback. Please add <uses-permission android:name=\"android.permission.VIBRATE\" /> to your application's manifest.");
+                } catch (Exception e) {
+                    Log.w(Util.PUBLIC_LOG_TAG, "Exception while attempting to vibrate: ", e);
+                }
+
 
                 gettingBarcode = true;
             }
@@ -680,11 +691,9 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
         }
         return rotationOffset;
     }
-
+    DetectionInfo dInfo;
     @Override
     public void handleResult(Result rawResult) {
-        Toast.makeText(mScanActivityRef.get(), "Contents = " + rawResult.getText() +
-                ", Format = " + rawResult.getBarcodeFormat().toString(), Toast.LENGTH_SHORT).show();
-
+        ((CardIOActivity) mScanActivityRef.get()).onCardXZingDetected(detectedBitmap,dInfo,rawResult.getText());
     }
 }

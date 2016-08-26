@@ -142,7 +142,7 @@ public class ZXingScannerView implements Camera.PreviewCallback {
                     }
                 });
             } else {
-                // it stops scanning - need to do something if you want to keep scanning after the first one
+                camera.setOneShotPreviewCallback(this);
             }
         } catch(RuntimeException e) {
             // This should not happen

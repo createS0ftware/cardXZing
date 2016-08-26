@@ -2,9 +2,11 @@ package org.my.scanExample;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import io.card.payment.CardIOActivity;
@@ -55,7 +57,7 @@ public class MyScanActivity extends Activity {
         scanIntent.putExtra(CardIOActivity.EXTRA_REQUIRE_POSTAL_CODE, false); // default: false
         scanIntent.putExtra(CardIOActivity.EXTRA_RESTRICT_POSTAL_CODE_TO_NUMERIC_ONLY, false); // default: false
         scanIntent.putExtra(CardIOActivity.EXTRA_REQUIRE_CARDHOLDER_NAME, false); // default: false
-
+        scanIntent.putExtra(CardIOActivity.EXTRA_RETURN_CARD_IMAGE,true);
         // hides the manual entry button
         // if set, developers should provide their own manual entry mechanism in the app
         scanIntent.putExtra(CardIOActivity.EXTRA_SUPPRESS_MANUAL_ENTRY, true); // default: false
@@ -100,6 +102,13 @@ public class MyScanActivity extends Activity {
         } else {
             resultStr = "Scan was canceled.";
         }
+
+        resultStr= data.getStringExtra("BARCODE");
+        Bitmap card = CardIOActivity.getCapturedCardImage(data);
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setAdjustViewBounds(true);
+        imageView.setImageBitmap(card);
         resultTextView.setText(resultStr);
 
     }

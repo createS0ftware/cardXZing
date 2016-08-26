@@ -276,7 +276,7 @@ public final class CardIOActivity extends Activity {
 
     private static final float UIBAR_VERTICAL_MARGIN_DP = 15.0f;
 
-    private static final long[] VIBRATE_PATTERN = { 0, 70, 10, 40 };
+    public static final long[] VIBRATE_PATTERN = { 0, 70, 10, 40 };
 
     private static final int TOAST_OFFSET_Y = -75;
 
@@ -788,8 +788,7 @@ public final class CardIOActivity extends Activity {
         mOverlay.setDetectionInfo(dInfo);
     }
 
-    void onCardDetected(Bitmap detectedBitmap, DetectionInfo dInfo) {
-        Log.d(TAG, "onCardDetected()");
+   public void onCardXZingDetected(Bitmap detectedBitmap, DetectionInfo dInfo, String barcode) {
 
         try {
             Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -825,14 +824,12 @@ public final class CardIOActivity extends Activity {
                 detectedBitmap.getHeight(), m, false);
         mOverlay.setBitmap(scaledCard);
 
-        if (mDetectOnly) {
+
             Intent dataIntent = new Intent();
             Util.writeCapturedCardImageIfNecessary(getIntent(), dataIntent, mOverlay);
-
+            dataIntent.putExtra("BARCODE", barcode);
             setResultAndFinish(RESULT_SCAN_SUPPRESSED, dataIntent);
-        } else {
-           // do nothing
-        }
+
     }
 
     /**
