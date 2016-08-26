@@ -2,9 +2,11 @@ package org.my.scanExample;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import io.card.payment.CardIOActivity;
@@ -100,6 +102,12 @@ public class MyScanActivity extends Activity {
         } else {
             resultStr = "Scan was canceled.";
         }
+
+        Bitmap card = CardIOActivity.getCapturedCardImage(data);
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setAdjustViewBounds(true);
+        imageView.setImageBitmap(card);
         resultTextView.setText(resultStr);
 
     }
