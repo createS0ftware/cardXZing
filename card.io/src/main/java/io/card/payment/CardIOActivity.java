@@ -573,10 +573,7 @@ public final class CardIOActivity extends Activity {
         Log.i(TAG, "onResume()");
 
         if(!waitingForPermission) {
-            if (manualEntryFallbackOrForced) {
-                nextActivity();
-                return;
-            }
+
 
             Util.logNativeMemoryStats();
 
@@ -591,7 +588,7 @@ public final class CardIOActivity extends Activity {
                 Log.e(TAG, "Could not connect to camera.");
                 StringKey error = StringKey.ERROR_CAMERA_UNEXPECTED_FAIL;
                 showErrorMessage(LocalizedStrings.getString(error));
-                nextActivity();
+
             } else {
                 // Turn flash off
                 setFlashOn(false);
@@ -791,110 +788,6 @@ public final class CardIOActivity extends Activity {
         mOverlay.setDetectionInfo(dInfo);
     }
 
-    void onCardDetected(Bitmap detectedBitmap, DetectionInfo dInfo) {
-        Log.d(TAG, "onCardDetected()");
-
-        try {
-            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            vibrator.vibrate(VIBRATE_PATTERN, -1);
-        } catch (SecurityException e) {
-            Log.e(Util.PUBLIC_LOG_TAG,
-                    "Could not activate vibration feedback. Please add <uses-permission android:name=\"android.permission.VIBRATE\" /> to your application's manifest.");
-        } catch (Exception e) {
-            Log.w(Util.PUBLIC_LOG_TAG, "Exception while attempting to vibrate: ", e);
-        }
-
-        mCardScanner.pauseScanning();
-        mUIBar.setVisibility(View.INVISIBLE);
-
-        if (dInfo.predicted()) {
-            mDetectedCard = dInfo.creditCard();
-            mOverlay.setDetectedCard(mDetectedCard);
-        }
-
-        float sf;
-        if (mFrameOrientation == ORIENTATION_PORTRAIT
-                || mFrameOrientation == ORIENTATION_PORTRAIT_UPSIDE_DOWN) {
-            sf = mGuideFrame.right / (float)CardScanner.CREDIT_CARD_TARGET_WIDTH * .95f;
-        } else {
-            sf = mGuideFrame.right / (float)CardScanner.CREDIT_CARD_TARGET_WIDTH * 1.15f;
-        }
-
-        Matrix m = new Matrix();
-        Log.d(TAG, "Scale factor: " + sf);
-        m.postScale(sf, sf);
-
-        Bitmap scaledCard = Bitmap.createBitmap(detectedBitmap, 0, 0, detectedBitmap.getWidth(),
-                detectedBitmap.getHeight(), m, false);
-        mOverlay.setBitmap(scaledCard);
-
-        if (mDetectOnly) {
-            Intent dataIntent = new Intent();
-            Util.writeCapturedCardImageIfNecessary(getIntent(), dataIntent, mOverlay);
-
-            setResultAndFinish(RESULT_SCAN_SUPPRESSED, dataIntent);
-        } else {
-            nextActivity();
-        }
-    }
-
-    private void nextActivity() {
-        Log.d(TAG, "nextActivity()");
-
-        final Intent origIntent = getIntent();
-        if (origIntent != null && origIntent.getBooleanExtra(EXTRA_SUPPRESS_CONFIRMATION, false)) {
-            Intent dataIntent = new Intent(CardIOActivity.this, DataEntryActivity.class);
-            if (mDetectedCard != null) {
-                dataIntent.putExtra(EXTRA_SCAN_RESULT, mDetectedCard);
-                mDetectedCard = null;
-            }
-
-            Util.writeCapturedCardImageIfNecessary(origIntent, dataIntent, mOverlay);
-
-            setResultAndFinish(RESULT_CONFIRMATION_SUPPRESSED, dataIntent);
-        } else {
-            new Handler().post(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG, "post(Runnable)");
-
-                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-
-                    Intent dataIntent = new Intent(CardIOActivity.this, DataEntryActivity.class);
-                    Util.writeCapturedCardImageIfNecessary(origIntent, dataIntent, mOverlay);
-
-                    if (mOverlay != null) {
-                        mOverlay.markupCard();
-                        if (markedCardImage != null && !markedCardImage.isRecycled()) {
-                            markedCardImage.recycle();
-                        }
-                        markedCardImage = mOverlay.getCardImage();
-                    }
-                    if (mDetectedCard != null) {
-                        dataIntent.putExtra(EXTRA_SCAN_RESULT, mDetectedCard);
-                        mDetectedCard = null;
-                    } else {
-                        /*
-                         add extra to indicate manual entry.
-                         This can obviously be indicated by the presence of EXTRA_SCAN_RESULT.
-                         The purpose of this is to ensure there's always an extra in the DataEntryActivity.
-                         If there are no extras received by DataEntryActivity, then an error has occurred.
-                         */
-                        dataIntent.putExtra(EXTRA_MANUAL_ENTRY_RESULT, true);
-                    }
-
-                    dataIntent.putExtras(getIntent()); // passing on any received params (such as isCvv
-                    // and language)
-                    dataIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
-                            | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                    startActivityForResult(dataIntent, DATA_ENTRY_REQUEST_ID);
-                }
-            });
-        }
-    }
-
-
     /**
      * Show an error message using toast.
      */
@@ -977,8 +870,6 @@ public final class CardIOActivity extends Activity {
         mOverlay.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.MATCH_PARENT));
         if (getIntent() != null) {
-            boolean useCardIOLogo = getIntent().getBooleanExtra(EXTRA_USE_CARDIO_LOGO, false);
-            mOverlay.setUseCardIOLogo(useCardIOLogo);
 
             int color = getIntent().getIntExtra(EXTRA_GUIDE_COLOR, 0);
 
@@ -1023,35 +914,7 @@ public final class CardIOActivity extends Activity {
 
         mUIBar.setGravity(Gravity.BOTTOM | Gravity.RIGHT);
 
-        // Show the keyboard button
-        if (!suppressManualEntry) {
-            Button keyboardBtn = new Button(this);
-            keyboardBtn.setId(KEY_BTN_ID);
-            keyboardBtn.setText(LocalizedStrings.getString(StringKey.KEYBOARD));
-            keyboardBtn.setOnClickListener(new Button.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    nextActivity();
-                }
-            });
-            mUIBar.addView(keyboardBtn);
-            ViewUtil.styleAsButton(keyboardBtn, false, this, useApplicationTheme);
-            if(!useApplicationTheme){
-                keyboardBtn.setTextSize(Appearance.TEXT_SIZE_SMALL_BUTTON);
-            }
-            keyboardBtn.setMinimumHeight(ViewUtil.typedDimensionValueToPixelsInt(
-                    Appearance.SMALL_BUTTON_HEIGHT, this));
-            RelativeLayout.LayoutParams keyboardParams = (RelativeLayout.LayoutParams) keyboardBtn
-                    .getLayoutParams();
-            keyboardParams.width = LayoutParams.WRAP_CONTENT;
-            keyboardParams.height = LayoutParams.WRAP_CONTENT;
-            keyboardParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-            ViewUtil.setPadding(keyboardBtn, Appearance.CONTAINER_MARGIN_HORIZONTAL, null,
-                    Appearance.CONTAINER_MARGIN_HORIZONTAL, null);
-            ViewUtil.setMargins(keyboardBtn, Appearance.BASE_SPACING, Appearance.BASE_SPACING,
-                    Appearance.BASE_SPACING, Appearance.BASE_SPACING);
 
-        }
         // Device has a flash, show the flash button
         RelativeLayout.LayoutParams uiParams = new RelativeLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);

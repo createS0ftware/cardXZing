@@ -4,8 +4,6 @@ package io.card.payment;
  * See the file "LICENSE.md" for the full license governing this code.
  */
 
-import android.content.Context;
-import android.graphics.Bitmap;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -15,7 +13,6 @@ import java.util.Map.Entry;
 
 import io.card.payment.i18n.LocalizedStrings;
 import io.card.payment.i18n.StringKey;
-import io.card.payment.ui.ViewUtil;
 
 /**
  * Enumerates each supported card type. see http://en.wikipedia.org/wiki/Bank_card_number for more
@@ -68,44 +65,13 @@ public enum CardType {
 
     private static int minDigits = 1;
 
-    private CardType(String name) {
+    CardType(String name) {
         this.name = name;
     }
 
     @Override
     public String toString() {
         return name;
-    }
-
-    /**
-     * Convenience method to return a CardType string (e.g. "Visa", "American Express", "JCB",
-     * "Maestro", "MasterCard", or "Discover") suitable for display. This string will be translated
-     * into the language specified. See {@link CardIOActivity#EXTRA_LANGUAGE_OR_LOCALE} for a
-     * detailed explanation of languageOrLocale.
-     *
-     * @param languageOrLocale See {@link CardIOActivity#EXTRA_LANGUAGE_OR_LOCALE}.
-     * @return the display name of the card
-     */
-    public String getDisplayName(String languageOrLocale) {
-        switch (this) {
-            case AMEX:
-                return LocalizedStrings.getString(StringKey.CARDTYPE_AMERICANEXPRESS, languageOrLocale);
-            case DINERSCLUB:
-            case DISCOVER:
-                return LocalizedStrings.getString(StringKey.CARDTYPE_DISCOVER, languageOrLocale);
-            case JCB:
-                return LocalizedStrings.getString(StringKey.CARDTYPE_JCB, languageOrLocale);
-            case MASTERCARD:
-                return LocalizedStrings.getString(StringKey.CARDTYPE_MASTERCARD, languageOrLocale);
-            case MAESTRO:
-                return LocalizedStrings.getString(StringKey.CARDTYPE_MAESTRO, languageOrLocale);
-            case VISA:
-                return LocalizedStrings.getString(StringKey.CARDTYPE_VISA, languageOrLocale);
-            default:
-                break;
-        }
-
-        return null;
     }
 
     /**
@@ -165,60 +131,13 @@ public enum CardType {
         return result;
     }
 
-    /**
-     * Returns the {@link Bitmap} of the card logo (e.g. Visa, MC, etc.), if known. Otherwise, returns null.
-     * <br><br>
-     * Returned bitmap is suitable for display with a masked card number, for example, to indicate a user's chosen
-     * card.
-     *
-     * @param context The application context for retrieving the image density
-     * @return the bitmap icon of the card for display
-     */
-    public Bitmap imageBitmap(Context context) {
-        String cardImageData = null;
-        switch (this) {
-            case AMEX: {
-                cardImageData = Base64EncodedImages.paypal_sdk_icon_amex_large;
-                break;
-            }
-            case VISA: {
-                cardImageData = Base64EncodedImages.paypal_sdk_icon_visa_large;
-                break;
-            }
-            case MASTERCARD: {
-                cardImageData = Base64EncodedImages.paypal_sdk_icon_mastercard_large;
-                break;
-            }
-            case DISCOVER:
-            case DINERSCLUB: {
-                cardImageData = Base64EncodedImages.paypal_sdk_icon_discover;
-                break;
-            }
-            case JCB: {
-                cardImageData = Base64EncodedImages.paypal_sdk_icon_jcb_large;
-                break;
-            }
-            default: {
-                // use generic cc image by default? nah, because if it's not one of the above, it's not
-                // valid, or it's maestro.
-                // cardImageData = Base64EncodedImages.paypal_sdk_icon_jcb_large;
-                break;
-            }
-        }
-
-        if (null != cardImageData) {
-            return ViewUtil.base64ToBitmap(cardImageData, context);
-        }
-
-        return null;
-    }
 
     /**
      * Determine if a number matches a prefix interval
      *
-     * @param number credit card number
+     * @param number        credit card number
      * @param intervalStart prefix (e.g. "4") or prefix interval start (e.g. "51")
-     * @param intervalEnd prefix interval end (e.g. "55") or null for non-intervals
+     * @param intervalEnd   prefix interval end (e.g. "55") or null for non-intervals
      * @return -1 for insufficient digits, 0 for no, 1 for yes.
      */
     private static boolean isNumberInInterval(String number, String intervalStart,
@@ -286,29 +205,6 @@ public enum CardType {
             intervalEnd = intervalStart;
         }
         return new Pair<String, String>(intervalStart, intervalEnd);
-    }
-
-    /**
-     * Infer the card type from a string.
-     *
-     * @param typeStr The String value of this enum
-     * @return the matched real type
-     */
-    public static CardType fromString(String typeStr) {
-        if (typeStr == null) {
-            return CardType.UNKNOWN;
-        }
-
-        for (CardType type : CardType.values()) {
-            if (type == CardType.UNKNOWN || type == CardType.INSUFFICIENT_DIGITS) {
-                continue;
-            }
-
-            if (typeStr.equalsIgnoreCase(type.toString())) {
-                return type;
-            }
-        }
-        return CardType.UNKNOWN;
     }
 
     /**

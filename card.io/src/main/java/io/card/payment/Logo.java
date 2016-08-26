@@ -34,25 +34,11 @@ class Logo {
         mContext = context;
     }
 
-    void loadLogo(boolean useCardIOLogo) {
-        if (mLogo != null && useCardIOLogo == mUseCardIOLogo) {
-            return; // no change, don't reload
-        }
-        int density = DisplayMetrics.DENSITY_HIGH;
-        mUseCardIOLogo = useCardIOLogo;
-        if (useCardIOLogo) {
-            mLogo = ViewUtil.base64ToBitmap(Base64EncodedImages.card_io_logo, mContext, density);
-        } else {
-            mLogo = ViewUtil.base64ToBitmap(Base64EncodedImages.paypal_logo, mContext, density);
-        }
-    }
+
 
     public void draw(Canvas canvas, float maxWidth, float maxHeight) {
 
-        if (mLogo == null) {
-            loadLogo(false);
-        }
-
+        mUseCardIOLogo = false;
         canvas.save();
 
         float drawWidth, drawHeight;

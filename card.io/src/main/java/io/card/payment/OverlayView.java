@@ -492,9 +492,6 @@ class OverlayView extends View {
         invalidate();
     }
 
-    public void setUseCardIOLogo(boolean useCardIOLogo) {
-        mLogo.loadLogo(useCardIOLogo);
-    }
 
     // for test
     public Rect getTorchRect() {

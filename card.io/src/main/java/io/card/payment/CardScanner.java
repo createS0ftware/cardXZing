@@ -13,7 +13,6 @@ import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
 import android.os.Build;
-import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -27,8 +26,6 @@ import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
 /**
  * Encapsulates the core image scanning.
