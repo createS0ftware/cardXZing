@@ -788,6 +788,53 @@ public final class CardIOActivity extends Activity {
         mOverlay.setDetectionInfo(dInfo);
     }
 
+    void onCardDetected(Bitmap detectedBitmap, DetectionInfo dInfo) {
+        Log.d(TAG, "onCardDetected()");
+
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(VIBRATE_PATTERN, -1);
+        } catch (SecurityException e) {
+            Log.e(Util.PUBLIC_LOG_TAG,
+                    "Could not activate vibration feedback. Please add <uses-permission android:name=\"android.permission.VIBRATE\" /> to your application's manifest.");
+        } catch (Exception e) {
+            Log.w(Util.PUBLIC_LOG_TAG, "Exception while attempting to vibrate: ", e);
+        }
+
+        mCardScanner.pauseScanning();
+        mUIBar.setVisibility(View.INVISIBLE);
+
+        if (dInfo.predicted()) {
+            mDetectedCard = dInfo.creditCard();
+            mOverlay.setDetectedCard(mDetectedCard);
+        }
+
+        float sf;
+        if (mFrameOrientation == ORIENTATION_PORTRAIT
+                || mFrameOrientation == ORIENTATION_PORTRAIT_UPSIDE_DOWN) {
+            sf = mGuideFrame.right / (float)CardScanner.CREDIT_CARD_TARGET_WIDTH * .95f;
+        } else {
+            sf = mGuideFrame.right / (float)CardScanner.CREDIT_CARD_TARGET_WIDTH * 1.15f;
+        }
+
+        Matrix m = new Matrix();
+        Log.d(TAG, "Scale factor: " + sf);
+        m.postScale(sf, sf);
+
+        Bitmap scaledCard = Bitmap.createBitmap(detectedBitmap, 0, 0, detectedBitmap.getWidth(),
+                detectedBitmap.getHeight(), m, false);
+        mOverlay.setBitmap(scaledCard);
+
+        if (mDetectOnly) {
+            Intent dataIntent = new Intent();
+            Util.writeCapturedCardImageIfNecessary(getIntent(), dataIntent, mOverlay);
+
+            setResultAndFinish(RESULT_SCAN_SUPPRESSED, dataIntent);
+        } else {
+           // do nothing
+        }
+    }
+
     /**
      * Show an error message using toast.
      */

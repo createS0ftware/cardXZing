@@ -73,8 +73,8 @@ class OverlayView extends View {
     private static final float GUIDE_LINE_HEIGHT = GUIDE_FONT_SIZE + GUIDE_LINE_PADDING;
     private static final float CARD_NUMBER_MARKUP_FONT_SIZE = GUIDE_FONT_SIZE + 2;
 
-    private static final Orientation[] GRADIENT_ORIENTATIONS = { Orientation.TOP_BOTTOM,
-            Orientation.LEFT_RIGHT, Orientation.BOTTOM_TOP, Orientation.RIGHT_LEFT };
+    private static final Orientation[] GRADIENT_ORIENTATIONS = {Orientation.TOP_BOTTOM,
+            Orientation.LEFT_RIGHT, Orientation.BOTTOM_TOP, Orientation.RIGHT_LEFT};
 
     private static final int GUIDE_STROKE_WIDTH = 17;
 
@@ -108,7 +108,6 @@ class OverlayView extends View {
     private Path mLockedBackgroundPath;
     private Rect mCameraPreviewRect;
     private final Torch mTorch;
-    private final Logo mLogo;
     private Rect mTorchRect, mLogoRect;
     private final boolean mShowTorch;
     private int mRotationFlip;
@@ -126,8 +125,6 @@ class OverlayView extends View {
         mScale = getResources().getDisplayMetrics().density / 1.5f;
 
         mTorch = new Torch(TORCH_WIDTH * mScale, TORCH_HEIGHT * mScale);
-        mLogo = new Logo(captureActivity);
-
         mGuidePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         mLockedBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -194,7 +191,7 @@ class OverlayView extends View {
             mLogoRect = Util.rectGivenCenter(logoPoint, (int) (LOGO_MAX_WIDTH * mScale),
                     (int) (LOGO_MAX_HEIGHT * mScale));
 
-            int[] gradientColors = { Color.WHITE, Color.BLACK };
+            int[] gradientColors = {Color.WHITE, Color.BLACK};
             Orientation gradientOrientation = GRADIENT_ORIENTATIONS[(mRotation / 90) % 4];
             mGradientDrawable = new GradientDrawable(gradientOrientation, gradientColors);
             mGradientDrawable.setGradientType(GradientDrawable.LINEAR_GRADIENT);
@@ -368,14 +365,6 @@ class OverlayView extends View {
         }
         canvas.restore();
 
-        // draw logo
-        if (!hideCardIOLogo) {
-            canvas.save();
-            canvas.translate(mLogoRect.exactCenterX(), mLogoRect.exactCenterY());
-            canvas.rotate(mRotationFlip * mRotation);
-            mLogo.draw(canvas, LOGO_MAX_WIDTH * mScale, LOGO_MAX_HEIGHT * mScale);
-            canvas.restore();
-        }
 
         if (mShowTorch) {
             // draw torch
@@ -471,7 +460,7 @@ class OverlayView extends View {
         paint.setTextSize(CARD_NUMBER_MARKUP_FONT_SIZE * mScale);
 
         int len = mDetectedCard.cardNumber.length();
-        float sf = mBitmap.getWidth() / (float)CardScanner.CREDIT_CARD_TARGET_WIDTH;
+        float sf = mBitmap.getWidth() / (float) CardScanner.CREDIT_CARD_TARGET_WIDTH;
         int yOffset = (int) ((mDetectedCard.yoff * sf - 6));
         for (int i = 0; i < len; i++) {
             int xOffset = (int) (mDetectedCard.xoff[i] * sf);

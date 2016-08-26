@@ -489,6 +489,7 @@ class CardScanner implements Camera.PreviewCallback, Camera.AutoFocusCallback,
             } else if (dInfo.predicted() || (mSuppressScan && dInfo.detected())) {
                 Log.d(TAG, "detected card: " + dInfo.creditCard());
                 //mScanActivityRef.get().onCardDetected(detectedBitmap, dInfo);
+
                 gettingBarcode = true;
             }
             // give the image buffer back to the camera, AFTER we're done reading
